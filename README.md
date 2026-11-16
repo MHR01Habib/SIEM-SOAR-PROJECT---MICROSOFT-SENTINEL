@@ -105,7 +105,7 @@ Many failed logins followed by a success from the same source is a clear sign th
 - The playbook **disabled the compromised account** and sent the email alert automatically
 - The dashboard gave a clear, single view of the attack as it happened
 
-### What Didn't Work
+### What I learned
 
 My **"Successful Login After Brute Force"** rule did not fire, even though the attacker did break in. The rule grouped events into fixed 10-minute blocks of time. The failed logins started in one block, and the successful login happened in the next, so the rule never saw them together.
 
