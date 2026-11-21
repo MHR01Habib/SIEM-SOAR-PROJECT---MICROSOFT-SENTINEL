@@ -1,0 +1,11 @@
+// Rule: User Added to Privileged Group (4732)
+// Severity: High | MITRE ATT&CK: T1098 Account Manipulation (Privilege Escalation)
+// Schedule: run every 5 minutes, look back 5 minutes
+// Entities: Account -> FullName = AddedAccount | Host -> HostName = Computer
+// Note: 4732 fires for any member added to a security-enabled local group. Filter on Group
+// (e.g. "Administrators") to cut noise from additions to Builtin\Users.
+// Known issue: for 4732, TargetAccount is the group, not the member who was added (that is in MemberSid),
+// so this mapping puts the group in the Account entity. Next fix: map MemberSid, or join it to the 4720 TargetSid.
+SecurityEvent
+| where EventID == 4732
+| project TimeGenerated, Computer, AddedAccount = TargetAccount, PerformedBy = SubjectAccount, Group = TargetUserName
