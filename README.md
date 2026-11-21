@@ -1,5 +1,5 @@
 # SIEM-SOAR-PROJECT---MICROSOFT-SENTINEL
-I built my own security operations center in Microsoft Azure. It collects logs from a Windows server, uses Microsoft Sentinel to catch attacks, and automatically locks the hacked account. Then I attacked it myself and investigated what happened.
+I built my own security operations center in Microsoft Azure. It collects logs from a Windows server, uses Microsoft Sentinel to catch attacks, and automatically disables the hacked account. Then I attacked it myself and investigated what happened.
 
 <img width="3200" height="3488" alt="soc-lab-monitoring-dashboard (1)" src="https://github.com/user-attachments/assets/474ea304-4901-4c1c-b4fb-0e8b48214fb7" />
 
@@ -100,18 +100,18 @@ Many failed logins followed by a success from the same source is a clear sign th
 
 ## Results
 
-- **22 incidents** were created by Sentinel during testing
+- **22 incidents** were created by Sentinel across all my test runs, including the main attack
 - **4 of my 5 rules** detected the attack as designed
 - The playbook **disabled the compromised account** and sent the email alert automatically
 - The dashboard gave a clear, single view of the attack as it happened
 
 ### What I learned
 
-My **"Successful Login After Brute Force"** rule did not fire, even though the attacker did break in. The rule grouped events into fixed 10-minute blocks of time. The failed logins started in one block, and the successful login happened in the next, so the rule never saw them together.
+My **"Successful Login After Brute Force"** rule did not fire, even though the attacker did break in. When I investigated, I found the reason: Windows recorded the failed logins under the account name `vm-attacker\testvictim`, but the successful login under `vm-soc-win\testvictim`. My rule only matched events when the account names were exactly the same, so it never connected the failures to the success.
 
-This was the most valuable finding of the project. It showed me that detection rules have to be tested against real attacks, because a rule that looks correct on paper can still miss a breach. The fix is to compare events across a sliding time window instead of fixed blocks.
+This was the most valuable finding of the project. It showed me that detection rules have to be tested against real attacks, because a rule that looks correct on paper can still miss a breach. The fix is to match on just the username and look for a success shortly after the failures. I tested that version against the real attack data and it caught the breach: 34 failed logins from the attacker, then a successful login at 04:36 UTC.
 
-I also noticed that the PowerShell rule created several duplicate incidents for the same activity. In a real SOC this creates alert fatigue, so grouping related alerts together would be the next improvement.
+I also noticed that the PowerShell rule created several duplicate incidents for the same activity. This happened because the rule runs every 5 minutes but looks back 20 minutes, so the same event got caught by several runs. In a real SOC this creates alert fatigue, so the next improvement is to only alert on events that arrived since the last run.
 
 ## Tools & Technologies
 
