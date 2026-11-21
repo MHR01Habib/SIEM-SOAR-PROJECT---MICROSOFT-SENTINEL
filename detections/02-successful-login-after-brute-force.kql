@@ -1,0 +1,22 @@
+// Rule: Successful Login After Brute Force (4624 after 4625)
+// Severity: High | MITRE ATT&CK: T1110 Brute Force, T1078 Valid Accounts
+// Schedule: run every 10 minutes, look back 10 minutes
+// Entities: Account -> FullName = Account | Host -> HostName = Computer | IP -> Address = IpAddress
+// Automation rule: incidents from this rule run the AutoDisableAndNotify playbook.
+
+// ---- Version deployed in the lab ----
+// KNOWN GAP: this version never fired during the attack. The failed logons (4625) were recorded
+// with Account = vm-attacker\testvictim, but the successful logon (4624) with Account = vm-soc-win\testvictim.
+// The join on Account needs an exact match, so the failures and the success were never paired,
+// even though both fell in the same 04:30 UTC time bucket.
+// See 02b-successful-login-after-brute-force-improved.kql for the fixed version.
+let failed = SecurityEvent
+    | where EventID == 4625
+    | summarize FailedCount = count() by Account, Computer, IpAddress, bin(TimeGenerated, 10m)
+    | where FailedCount >= 5;
+let success = SecurityEvent
+    | where EventID == 4624
+    | summarize SuccessCount = count() by Account, Computer, bin(TimeGenerated, 10m);
+failed
+| join kind=inner success on Account, Computer, TimeGenerated
+| project TimeGenerated, Account, Computer, IpAddress, FailedCount, SuccessCount
