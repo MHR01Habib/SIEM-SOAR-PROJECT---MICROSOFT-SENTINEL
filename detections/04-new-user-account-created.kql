@@ -1,0 +1,7 @@
+// Rule: New User Account Created (4720)
+// Severity: Medium | MITRE ATT&CK: T1136 Create Account (Persistence)
+// Schedule: run every 5 minutes, look back 5 minutes
+// Entities: Account -> FullName = NewAccount | Host -> HostName = Computer
+SecurityEvent
+| where EventID == 4720
+| project TimeGenerated, Computer, SubjectAccount = Account, NewAccount = TargetAccount

@@ -1,0 +1,21 @@
+// Rule: Successful Login After Brute Force (improved version)
+// Severity: High | MITRE ATT&CK: T1110 Brute Force, T1078 Valid Accounts
+// Schedule: run every 10 minutes, look back 1 hour
+// Entities: Account -> Name = User | Host -> HostName = Computer | IP -> Address = IpAddress
+// Status: tested against the 26 Oct 2026 attack data, not yet deployed.
+// Matches on the username only (lower-cased TargetUserName) and looks for a success within 30 minutes
+// after at least 5 failures from the same IP. Run against the attack window it returned:
+// testvictim | vm-soc-win | 172.16.1.4 | 34 failures | success at 04:36:18 UTC
+let lookback = 1h;
+let window = 30m;
+let failures = SecurityEvent
+    | where TimeGenerated > ago(lookback) and EventID == 4625
+    | summarize FailedCount = count(), FirstFail = min(TimeGenerated), LastFail = max(TimeGenerated)
+        by User = tolower(TargetUserName), Computer, IpAddress
+    | where FailedCount >= 5;
+SecurityEvent
+| where TimeGenerated > ago(lookback) and EventID == 4624
+| extend User = tolower(TargetUserName)
+| join kind=inner failures on User, Computer, IpAddress
+| where TimeGenerated between (FirstFail .. LastFail + window)
+| summarize SuccessTime = min(TimeGenerated) by User, Computer, IpAddress, FailedCount, FirstFail, LastFail
