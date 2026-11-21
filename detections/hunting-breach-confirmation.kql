@@ -1,0 +1,7 @@
+// Hunting query used during the investigation: everything one source IP did.
+SecurityEvent
+| where IpAddress == "172.16.1.4"
+| summarize Attempts = count(), Accounts = make_set(TargetUserName),
+    FirstSeen = min(TimeGenerated), LastSeen = max(TimeGenerated)
+    by IpAddress, EventID, Activity
+| sort by Attempts desc
