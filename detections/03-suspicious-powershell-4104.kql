@@ -1,0 +1,15 @@
+// Rule: Suspicious PowerShell Activity (Event 4104)
+// Severity: Medium | MITRE ATT&CK: T1059.001 Command and Scripting Interpreter: PowerShell (Execution)
+// Schedule: run every 5 minutes, look back 20 minutes
+//   (the lookback was raised from 5 to 20 min because Event-table ingestion lagged behind a 5-minute window)
+// Entities: Host -> HostName = Computer
+// Known issue: because the rule runs every 5 minutes but looks back 20, each event is matched by
+// several runs, which created duplicate incidents. Next fix: add `| where ingestion_time() > ago(5m)`
+// so each event only alerts once.
+// Data source: dcr-powershell-logs, XPath Microsoft-Windows-PowerShell/Operational!*
+// Requires PowerShell Script Block Logging on the host
+Event
+| where EventID == 4104
+| where RenderedDescription has_any ("IEX", "DownloadString", "Net.WebClient", "FromBase64String",
+                                     "EncodedCommand", "Invoke-Expression", "DownloadFile")
+| project TimeGenerated, Computer, RenderedDescription
