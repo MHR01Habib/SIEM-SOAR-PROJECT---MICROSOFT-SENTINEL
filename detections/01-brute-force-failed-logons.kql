@@ -1,0 +1,8 @@
+// Rule: Brute Force - Multiple Failed Logons (4625)
+// Severity: Medium | MITRE ATT&CK: T1110 Brute Force (Credential Access)
+// Schedule: run every 5 minutes, look back 5 minutes | Alert threshold: > 0 results
+// Entities: Account -> FullName = Account | Host -> HostName = Computer | IP -> Address = IpAddress
+SecurityEvent
+| where EventID == 4625
+| summarize FailedAttempts = count() by Account, Computer, IpAddress
+| where FailedAttempts >= 10
